@@ -53,6 +53,8 @@ from deap import creator
 from deap import tools
 from example_mop import SIM_PATH
 
+from woa_sop import *
+
 ### 実行用の変数の設定
 # - N_PROC: 子プロセスの展開数．
 # - OUT_DIR: パレートフロントのcsvを書き出すディレクトリ．当初の設定ではカレントディレクトリを指定しています．
