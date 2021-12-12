@@ -21,7 +21,7 @@
 # GAで近似解を導出するpythonプログラムです．
 # 最終世代の最良解をcsvとして書き出します．
 # シミュレーションプログラムに渡す引数の設定，戻り値の受取り方，とりあえず動く実装として参考になさってください．
-# 
+#
 # ### 実行方法と注意
 # プログラムのあるディレクトリで以下のように実行してください．
 # python example_sop.py
@@ -29,7 +29,7 @@
 # 1つの解の評価に MacBook Air (M1, 2020)の環境で20秒程度かかります．
 # 1つの子プロセスの展開で実行時に150MB程度のメモリを消費しますので，子プロセスの展開数は
 # メモリとCPUコア数とを確認されてから設定してください．
-# 
+#
 # ### 動作環境
 # 以下の環境で動作確認をしています．
 # 外部のライブラリとしては[DEAP](https://github.com/deap/deap)を使っています．
@@ -83,7 +83,7 @@ SEEDS = "[123,42,256]"
 # - N_HOF: 記録用に保持する(上位n個の)最良個体数
 SEED = 42
 N_IND = 3
-N_GEN = 3
+N_GEN = 5
 N_ATTR = 47
 N_PAY = 16
 S_TOUR = 3
@@ -108,7 +108,7 @@ priority_order_list  = (
         (11,12,13,14,15,16,)
     ),
     (
-        (17,), 
+        (17,),
         (18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37,)
     ),
     (
@@ -128,7 +128,7 @@ priority_order_list  = (
 # - evaluation: 個体の評価を行う．
 # - decode_hof: 最良個体を支援制度（クエリ， 金額）にデコードする支援制度（クエリ， 金額）にデコードする
 # - create_valid_pop: 支給対象の制約条件を満たす初期個体を生成する
-def gene2pay(gene): 
+def gene2pay(gene):
     ### コーディングした遺伝子から，設計変数へと変換する関数
     # クエリ q は pandas.DataFrame.query の形式で書く形です．
     # シミュレーションプログラムでは制約条件を満たしているかの判定を渡されたクエリの文字列から
@@ -140,7 +140,7 @@ def gene2pay(gene):
     #   q: 給付金の対象を決めるクエリ
     #   pay: 給付金額（単位：万円）
     q = ''
-    
+
     family_type_val = [0, 1, 2, 3, 4, 50, 60, 70, 80]
     family_type = [family_type_val[j] for i,j in zip(range(0, 9), range(9)) if gene[i] == 1]
     family_type = ",".join(map(str, family_type))
@@ -159,7 +159,7 @@ def gene2pay(gene):
     employment_type_val = [-1, 10, 20 ,30]
     employment_type = [employment_type_val[j] for i,j in zip(range(38, 42), range(4)) if gene[i] == 1]
     employment_type = ",".join(map(str, employment_type))
-    q = q + ' and employment_type_id == [' + employment_type + ']'        
+    q = q + ' and employment_type_id == [' + employment_type + ']'
 
     company_size_val = [-1, 5, 10 ,100, 1000]
     company_size = [company_size_val[j] for i,j in zip(range(42, 47), range(5)) if gene[i] == 1]
@@ -167,7 +167,7 @@ def gene2pay(gene):
     q = q + ' and company_size_id == [' + company_size + ']'
     #万円単位で
     pay = gene[N_ATTR]
-    
+
     """
     pay = 0
     
@@ -175,11 +175,11 @@ def gene2pay(gene):
         pay += gene[i]
     """
 
-    
+
 
     return q, pay
 
-def gene2pay4human(gene): 
+def gene2pay4human(gene):
     ### コーディングした遺伝子から，設計変数へと変換する関数
     # クエリ q は pandas.DataFrame.query の形式で書く形です．
     # シミュレーションプログラムでは制約条件を満たしているかの判定を渡されたクエリの文字列から
@@ -193,14 +193,14 @@ def gene2pay4human(gene):
     q = ''
     #family_type_val = [0, 1, 2, 3, 4, 50, 60, 70, 80]
     family_type_val = [
-        "単独世帯", 
-        "夫婦のみ世帯", 
-        "夫婦と子供世帯", 
-        "男親と子供", 
-        "女親と子供", 
-        "男親と両親 (夫の親)", 
-        "夫婦とひとり親 (夫の親)", 
-        "夫婦・子供と両親 (夫の親)", 
+        "単独世帯",
+        "夫婦のみ世帯",
+        "夫婦と子供世帯",
+        "男親と子供",
+        "女親と子供",
+        "男親と両親 (夫の親)",
+        "夫婦とひとり親 (夫の親)",
+        "夫婦・子供と両親 (夫の親)",
         "夫婦・子供とひとり親 (夫の親)"
     ]
     family_type = [family_type_val[j] for i,j in zip(range(0, 9), range(9)) if gene[i] == 1]
@@ -210,13 +210,13 @@ def gene2pay4human(gene):
 
     #role_household_type_val = [0, 1, 10, 11, 20, 21, 30, 31]
     role_household_type_val = [
-        "単独世帯 (男性)", 
-        "単独世帯 (女性)", 
-        "夫・男親", 
-        "妻・女親", 
-        "子供 (男性)", 
-        "子供 (女性)", 
-        "親 (男性)", 
+        "単独世帯 (男性)",
+        "単独世帯 (女性)",
+        "夫・男親",
+        "妻・女親",
+        "子供 (男性)",
+        "子供 (女性)",
+        "親 (男性)",
         "親 (女性)"
     ]
     role_household_type = [role_household_type_val[j] for i,j in zip(range(9, 17), range(8)) if gene[i] == 1]
@@ -253,21 +253,21 @@ def gene2pay4human(gene):
 
     #employment_type_val = [-1, 10, 20 ,30]
     employment_type_val = [
-        "非就業者", 
-        "一般労働者", 
-        "短時間労働者", 
+        "非就業者",
+        "一般労働者",
+        "短時間労働者",
         "臨時労働者"
     ]
     employment_type = [employment_type_val[j] for i,j in zip(range(38, 42), range(4)) if gene[i] == 1]
     employment_type = ",".join(map(str, employment_type))
-    q = q + '\nand 雇用形態 A_4 == [' + employment_type + ']'        
+    q = q + '\nand 雇用形態 A_4 == [' + employment_type + ']'
 
     #company_size_val = [-1, 5, 10 ,100, 1000]
     company_size_val = [
-        "非就業者", 
-        "5~9人", 
-        "10~99人", 
-        "100~999人", 
+        "非就業者",
+        "5~9人",
+        "10~99人",
+        "100~999人",
         "1000人以上"
     ]
     company_size = [company_size_val[j] for i,j in zip(range(42, 47), range(5)) if gene[i] == 1]
@@ -277,7 +277,7 @@ def gene2pay4human(gene):
     pay = gene[N_ATTR]
 
     return q, pay
-    
+
 def ret_fitness(p):
     ### 子プロセスが完了することを待って，目的関数値などを返す関数
     # 引数：
@@ -285,7 +285,7 @@ def ret_fitness(p):
     # 戻り値：
     #   Fの目的関数値，Fの各条件での目的関数値,解が制約条件を満たすか（T/F），
     #   解の金額面の余裕（マイナスの場合には制約を満たしていない）
-    
+
     a, err = p.communicate(timeout=10_000)
     # 正常に子プロセスが終了しないときは，目的関数値を1_000にしておく -> 次は選ばれないように
     if p.returncode != 0:
@@ -330,7 +330,7 @@ def evaluation(pop):
         if (i + 1) % N_PROC == 0 or i == n_ind - 1:
             batch_list.append(ind_list)
             ind_list = []
-            
+
     # バッチごとに処理を進めていく
     # job_list: 実行するコマンドを要素とするlist
     # procs：subprocessに展開するためのlist
@@ -536,15 +536,17 @@ def main():
     creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
     creator.create("Individual", list, fitness=creator.FitnessMin)
     toolbox = base.Toolbox()
+    
+
 
     # 初期の個体は支給対象の定義においては制約を満たす個体で始める（なお，金額面は満たすとは限らない）
     random.seed(SEED)
     valid_pop = create_valid_pop_with_bias()
     #amount_part_pop = create_amount_part_pop()
 
-    def initPopulation(pcls, ind_init, file):    
+    def initPopulation(pcls, ind_init, file):
         return pcls(ind_init(c) for c in file)
-    
+
     def hybrid_crossover(ind1, ind2, indpb):
         """Executes a uniform crossover that modify in place the two
         :term:`sequence` individuals. The attributes are swapped according to the
@@ -637,16 +639,18 @@ def main():
     # - pop_archive: 個体情報のアーカイブ
     # - paretof_archive: パレートフロントのアーカイブ
     pop_archive = []
-    paretof_archive = []    
-    
+    paretof_archive = []
+
     # 個体集合の作成
     pop = toolbox.population_byhand()
     pop_archive.append((0, pop[:]))
     # 個体の評価
     pop = evaluation(pop)
+    print("以下pop")
+    print(pop)
     print([i.fitness.values for i in pop])
     print([i for i in pop if 1000.0 <= i.fitness.values[0]])
-    
+
     # ログ関係
     stats = tools.Statistics()
     stats.register("avg", np.mean)
@@ -658,7 +662,8 @@ def main():
     record = stats.compile([ind.fitness.values[0] for ind in pop])
     logbook.record(gen=0, evals=len(pop), **record)
     hof = tools.HallOfFame(maxsize=N_HOF)
-    
+
+
     # 進化のサイクルを回す
     #for g in []:
     for g in range(1, N_GEN + 1):
@@ -668,7 +673,9 @@ def main():
         # 子の世代の選択と複製
         offspring = toolbox.select(pop, len(pop))
         offspring = list(map(toolbox.clone, offspring))
+
         # 交叉
+        """
         for child1, child2 in zip(offspring[::2], offspring[1::2]):
             if random.random() < P_CROSS_1:
                 toolbox.mate(child1, child2, P_CROSS_2)
@@ -679,6 +686,8 @@ def main():
             if random.random() < P_MUTATION:
                 toolbox.mutate(mutant)
                 del mutant.fitness.values
+        """
+
         """
         print('変換前 : ',end='')
         print([["❌", "👍"][int(is_feasible(i))] for i in offspring])
@@ -695,16 +704,21 @@ def main():
         print([i.fitness.values for i in offspring])
         # 子の世代を次の個体集合へ置き換える
         pop[:] = offspring
-        
+
         record = stats.compile([ind.fitness.values for ind in pop])
         logbook.record(gen=g, evals=len(invalid_ind), **record)
+
+        #!最適を選び出す
         hof.update(pop)
-        
-    
+
+        #print("hof")
+        #print(hof)
+
+
     # 次回の実行のため，削除しておく
     del creator.FitnessMin
     del creator.Individual
-    
+
     return logbook, hof
 # -
 
