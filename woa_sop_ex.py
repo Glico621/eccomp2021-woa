@@ -55,15 +55,12 @@ class WOA():
     #初期化，処理する配列を持ってくる
     def init(self, pop):
         #popの中にある配列の要素数を知りたい
-        #print(f'クジラ内pop{pop}')
         self.pop_size = len(pop[0]) - 1    #これ-1いるかいらんか
 
         #self.best_whale = np.zeros(self.pop_size)
         self._a = 2
 
         #最後の要素（値段）を除いた01要素だけ持ってくる
-        #self.whales：popの遺伝子を格納
-        #self.pay：popの給付金額部分（配列末尾）を格納
         self.whales = []
         self.pay = []
         for num in range(len(pop)):
@@ -72,7 +69,6 @@ class WOA():
             self.whales.append(prov)
             self.pay.append(pay)
 
-        #print(f'pay:{self.pay}')
 
         #!最良を持ってきたい
         self.best_whale = np.array(self.whales[0])
@@ -87,10 +83,9 @@ class WOA():
     #アルゴリズムの処理をここで
     def step(self):
         #print(self.whales)
-        count = 0
         #クジラ集団の配列から，一つずつ取り出して処理させる
         for whale in self.whales:
-            #print(whale)
+            print(whale)
             pos = whale
             #pos = np.array(whale)
             #print(pos)
@@ -140,7 +135,9 @@ class WOA():
             #print("いかpos")
             #print(pos)
 
-            #!これくっそ問題 →たぶんok
+            
+            
+            #!これくっそ問題
             #計算し終えたposで，whaleを更新
             self.new_whales.append(pos.tolist())
 
@@ -148,18 +145,41 @@ class WOA():
             #比較方法がわからん
             #ここで計算しないで，ga_sopのupdate()でやるのかな
 
-            #配列最後尾に給付金額を追加
-            self.new_whales[count].append(self.pay[count])
-            count += 1
 
+        for num in range(len(self.new_whales)):
+            self.new_whales[num][-1] = self.pay[num]
+            print(num)
 
         self._a -= self.a_decrease
         if self._a < 0:
             self._a = 0
 
-        print(f'クジラリターン{self.new_whales}')
+
         #pop（だと思う）を返す
         return self.new_whales
+
+
+whale1 = WOA()
+whale1
+pop = [
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 0, 1, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 0, 0, 0, 12.990088769946864],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 1, 1, 0, 0, 0, 1, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 11.284652415653257]
+    ]
+#print(len(pop))
+#print(pop)
+
+whale1.init(pop)
+
+whales = whale1.step()
+print(whales)
+
+
+
+
+
+
+
+
 
 
 
