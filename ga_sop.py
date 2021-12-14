@@ -82,7 +82,7 @@ SEEDS = "[123,42,256]"
 # - P_MUTATION：各遺伝子座が突然変異する確率
 # - N_HOF: 記録用に保持する(上位n個の)最良個体数
 SEED = 42
-N_IND = 3
+N_IND = 5
 N_GEN = 3
 N_ATTR = 47
 N_PAY = 16
@@ -317,6 +317,9 @@ def evaluation(pop):
     # 各個体の評価値と実行可能かどうかをリストに入れていく
     f_list = []
     is_feasible_list = []
+    
+    #!評価箱追加
+    values = []
 
     # 1回あたりの実行に時間がかかるため，子プロセスを生成して，並行して実行する
     # 個体群をN_PROC個を単位として，バッチに分ける．
@@ -361,24 +364,28 @@ def evaluation(pop):
         # 目的関数値を各個体に割り当てていく．
         # このときに，解が金額の制約以外で，実行可能でないときには，ペナルティとして，目的関数値を1000とする
         if j == False:
-            ind.fitness.values = 1_000,
+            #ind.fitness.values = 1_000,
+            ind_fitness_values = 1_000,
         else:
-            ind.fitness.values = f,
+            ind_fitness_values = f,
+        values.append(ind_fitness_values)
 
-    return pop
+    return pop, values
 
-def decode_hof(hof):
+def decode_hof(hof, hof_fitness):
     # パレートフロントの個体を支援制度（クエリ， 金額）にデコードする
     # 引数
     #   hof: パレートフロントの個体
     # 戻り値：
     #   支援制度（クエリ， 金額）のDataFrame
     q_and_pay = []
+    count = 0
     for h in hof:
         q, p = gene2pay(h)
-        f = h.fitness.values[0]
+        f = hof_fitness[count]
         gene = h
         q_and_pay.append([q, p, f, gene])
+        count+=1
     return pd.DataFrame(q_and_pay, columns=['query', 'payment', 'f', 'gene'])
 
 def is_feasible(gene):
@@ -410,7 +417,7 @@ def is_feasible(gene):
         else:
             #print("上限 : {}, 給付額 : {}".format(calc_benefit_upper_limit(gene), sum(gene[-N_PAY:])))
             return True
-
+"""
 def create_valid_pop_uniformly():
     valid_pop = []
     true_list = [0,9,10,17,38,40,42,43] # これは必ず1を立てる
@@ -431,6 +438,7 @@ def create_valid_pop_uniformly():
         else:
             print('⚠️',end='')
     return valid_pop
+"""
 
 def create_valid_pop_with_bias():
     ### 支給対象の定義において制約を満たす個体(群)を返す
@@ -527,7 +535,13 @@ def main():
     # 交叉：一様交叉
     # 突然変異：ビット反転
     # 選択：トーナメント選択
-    
+
+    #!クジラ初期化
+    whale = WOA()
+
+    values = []
+    hof_fitness = []
+
     #スクリプトを途中終了したとき警告がでて嫌なので、残ってたら消しておく
     try:
         del creator.FitnessMin
@@ -645,10 +659,13 @@ def main():
     pop = toolbox.population_byhand()
     pop_archive.append((0, pop[:]))
     # 個体の評価
-    pop = evaluation(pop)
-    print([i.fitness.values for i in pop])
-    print([i for i in pop if 1000.0 <= i.fitness.values[0]])
-    
+    pop, values = evaluation(pop)
+    #print([i.fitness.values for i in pop])
+    #print([i for i in pop if 1000.0 <= i.fitness.values[0]])
+    print(f'これvalues{values}')
+    #print([values for i in pop])
+    #print([i for i in pop if 1000.0 <= float(values[0])])
+
     # ログ関係
     stats = tools.Statistics()
     stats.register("avg", np.mean)
@@ -657,7 +674,8 @@ def main():
     stats.register("max", np.max)
     logbook = tools.Logbook()
     logbook.header = "gen", "evals", "avg", "std", "min", "max"
-    record = stats.compile([ind.fitness.values[0] for ind in pop])
+    #record = stats.compile([ind.fitness.values[0] for ind in pop])
+    record = stats.compile([values[i] for i in range(len(pop))])
     logbook.record(gen=0, evals=len(pop), **record)
     hof = tools.HallOfFame(maxsize=N_HOF)
     
@@ -673,9 +691,9 @@ def main():
         offspring = list(map(toolbox.clone, offspring))
         print(f'offs:{offspring}')
 
-        whale = WOA()
-        whale.init(offspring)
-        new_offspring = whale.step()
+        #whale = WOA()
+        #whale.init(offspring)
+        new_offspring = whale.step(offspring)
         print(f'クジラoffs:{new_offspring}')
         #offspring,p = gene2pay(offspring)
         #offspring = evaluation(offspring)
@@ -705,24 +723,35 @@ def main():
         #print([i.fitness.values for i in offspring])
         # 子の世代で無効な適応度（delされたもの）をもつ個体を対象として評価を行う
         #invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
-        
-        invalid_ind = evaluation(new_offspring)
+
+        invalid_ind, values2 = evaluation(new_offspring)
         # invalid_ind = evaluation(offspring)
-        print([i.fitness.values for i in offspring])
+        print([values2[i] for i in range(len(offspring))])
         # 子の世代を次の個体集合へ置き換える
         pop[:] = offspring
-        
-        record = stats.compile([ind.fitness.values for ind in pop])
+
+        #record = stats.compile([ind.fitness.values for ind in pop])
+        record = stats.compile([values2[i] for i in range(len(pop))])
         logbook.record(gen=g, evals=len(invalid_ind), **record)
-        hof.update(pop)
-        print(f'hof:{hof}')
         
-    
+        #hof_before：hofが変更されたか否かの確認用
+        #hof_before = hof
+        hof.update(pop)
+        
+        #hofが更新されたら，hof_fitnessにfの要素を追加する
+        #if hof != hof_before:
+        #    hof_fitness.append(values2[-1])
+
+        print(f'hof:{hof}')
+        print(f'hof[0]{hof[0]}')
+        print(f'hofのfitness{hof_fitness}')
+
+
     # 次回の実行のため，削除しておく
     del creator.FitnessMin
     del creator.Individual
-    
-    return logbook, hof
+
+    return logbook, hof, values2
 # -
 
 
@@ -730,11 +759,11 @@ if __name__ == "__main__":
     start_time = datetime.datetime.now()
     print("Start:"+str(start_time))
     # 進化計算の実行
-    logbook, hof = main() # logbookはこのサンプルでは利用していない
+    logbook, hof, hof_fitness = main() # logbookはこのサンプルでは利用していない
 
     # 最良個体の出力
     #print(hof)
-    df_hof_final = decode_hof(hof)
+    df_hof_final = decode_hof(hof, hof_fitness)
     #print(df_hof_final)
     df_hof_final.drop_duplicates(keep='first', subset=['query', 'payment'])
     df_hof_final.to_csv(OUT_DIR + EID + '_p.csv')

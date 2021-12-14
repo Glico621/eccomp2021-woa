@@ -50,16 +50,25 @@ class WOA():
         self.whale_max = whale_max
         self.a_decrease = a_decrease
         self.logarithmic_spiral = logarithmic_spiral
+        self._a = 2
 
 
     #初期化，処理する配列を持ってくる
-    def init(self, pop):
+    #def init(self, pop):
         #popの中にある配列の要素数を知りたい
         #print(f'クジラ内pop{pop}')
+
+
+        #print(pop[num][:-1])
+        #print(self.whales)
+
+
+    #アルゴリズムの処理をここで
+    def step(self, pop):
+        #print(self.whales)
         self.pop_size = len(pop[0]) - 1    #これ-1いるかいらんか
 
         #self.best_whale = np.zeros(self.pop_size)
-        self._a = 2
 
         #最後の要素（値段）を除いた01要素だけ持ってくる
         #self.whales：popの遺伝子を格納
@@ -80,13 +89,7 @@ class WOA():
         #変更後の遺伝子を返す用配列
         self.new_whales = []
 
-        #print(pop[num][:-1])
-        #print(self.whales)
 
-
-    #アルゴリズムの処理をここで
-    def step(self):
-        #print(self.whales)
         count = 0
         #クジラ集団の配列から，一つずつ取り出して処理させる
         for whale in self.whales:
@@ -117,7 +120,7 @@ class WOA():
 
                 new_pos = np.asarray(new_pos)
 
-                
+
                 D = np.linalg.norm(np.multiply(C, new_pos) - pos)
                 pos = new_pos = np.multiply(A, D)
 
@@ -133,7 +136,7 @@ class WOA():
 
 
 
-            
+
             #四捨五入でもして少数から01に変換する必要がある
             pos = np.where(pos>=0.5, 1, 0)
             #pos = np.where(pos<0.5, pos, 0)
