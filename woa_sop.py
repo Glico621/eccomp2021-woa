@@ -43,7 +43,7 @@ import numpy as np
 class WOA():
     def __init__(self,
                 whale_max=10,               #クジラ頭数
-                a_decrease=0.001,           #変数aの減少値
+                a_decrease=0.4,           #変数aの減少値
                 logarithmic_spiral=1,       #対数螺旋の係数
     ):
         #各変数の初期化
@@ -64,7 +64,7 @@ class WOA():
 
 
     #アルゴリズムの処理をここで
-    def step(self, pop):
+    def step(self, pop, hof):
         #print(self.whales)
         self.pop_size = len(pop[0]) - 1    #これ-1いるかいらんか
 
@@ -84,7 +84,19 @@ class WOA():
         #print(f'pay:{self.pay}')
 
         #!最良を持ってきたい
-        self.best_whale = np.array(self.whales[0])
+        best = []
+        self.bests = []
+        if len(hof)==0:
+            self.best_whale = np.array(self.whales[0])
+        else:
+            best = hof[0][:-1]
+            self.best_whale = np.array(best)
+            
+            for h in hof:
+                best = h[:-1]
+                self.bests.append(np.array(best))
+
+        self.bests += self.whales
 
         #変更後の遺伝子を返す用配列
         self.new_whales = []
@@ -116,13 +128,21 @@ class WOA():
                 else:
                     #獲物を探す
                     #目標は，ランダムのクジラ
-                    new_pos = self.whales[random.randint(0, len(self.whales) -1)]
+                    
+                    
+                    if len(self.bests)==0:
+                        new_pos = self.whales[random.randint(0, len(self.whales) -1)]
+                    else:
+                        new_pos = self.bests[random.randint(0, len(self.bests) -1)]
+                    
+                    #new_pos = self.whales[random.randint(0, len(self.whales) -1)]
+                    
 
                 new_pos = np.asarray(new_pos)
 
 
                 D = np.linalg.norm(np.multiply(C, new_pos) - pos)
-                pos = new_pos = np.multiply(A, D)
+                pos = new_pos - np.multiply(A, D)
 
             else:
                 #旋回
@@ -138,7 +158,7 @@ class WOA():
 
 
             #四捨五入でもして少数から01に変換する必要がある
-            pos = np.where(pos>=0.5, 1, 0)
+            pos = np.where(pos>=2, 1, 0)
             #pos = np.where(pos<0.5, pos, 0)
             #print("いかpos")
             #print(pos)
@@ -147,20 +167,175 @@ class WOA():
             #計算し終えたposで，whaleを更新
             self.new_whales.append(pos.tolist())
 
-            #最良クジラと比較して，良いほうをbest_whaleに入れる
-            #比較方法がわからん
-            #ここで計算しないで，ga_sopのupdate()でやるのかな
+
+
+
 
             #配列最後尾に給付金額を追加
             self.new_whales[count].append(self.pay[count])
             count += 1
 
 
+
+        #条件に適応させていく
+        #まずは，必ず1にする必要があるものから
+        true_list = [0,9,10,17,38,40,42,43] # これは必ず1を立てる
+
+        for whale in self.new_whales:
+            print(f'whale{whale}')
+            for index in true_list:
+                if whale[index] == 0:
+                    whale[index] = 1
+                    print("やあ")
+
+        #次に，優先順位的な問題
+        # それぞれ第一優先はtruelistで追加済み
+        #家族構成
+        family_second = [4]
+        family_third = [3]
+        family_fourth = [1,2,5,6,7,8]
+        #雇用形態
+        employment_second = [40,41]
+        employment_third = [39]
+        #企業規模
+        scale_second = [44]
+        scale_third = [45]
+        scale_fourth = [46]
+
+        #調整していく
+        #1を立てるだけでなく，1を消す選択肢も持ちたい
+        for whale in self.new_whales:
+            #家族構成
+                #パターン１：優先順位4で1があった場合，優先順位2,3も1を立てる
+                #パターン２：                        優先順位3,4に0を立てる
+                #パターン３：                        優先順位2,3,4に0を立てる
+            rand01 = random.random()
+            for fourth in family_fourth:
+                if whale[fourth]==1:
+                    for second,third in zip(family_second, family_third):
+                        #パターン１
+                        if rand01 < 0.2:
+                            whale[second] = 1
+                            whale[third] = 1
+                        #パターン２
+                        elif rand01 < 0.6:
+                            whale[third] = 0
+                            whale[fourth] = 0
+                            #for four in family_fourth:
+                                #whale[four] = 0
+                        #パターン３
+                        else:
+                            whale[second] = 0
+                            whale[third] = 0
+                            whale[fourth] = 0
+                            #for four in family_fourth:
+                            #    whale[four] = 0
+                #パターン１：優先順位3で1があった場合，優先順位2も1を立てる
+                #パターン２：                        優先順位3,4に0
+            rand01 = random.random()
+            for third in family_third:
+                if whale[third]==1:
+                    if rand01 < 0.3:
+                        for second in family_second:
+                            whale[second] = 1
+                    else:
+                        whale[third] = 0
+                        for fourth in family_fourth:
+                            whale[fourth] = 0
+
+            #雇用形態
+                #パターン１：優先順位3で1があった場合，優先順位2も1を立てる
+                #パターン２：                        優先順位2,3に0
+            rand01 = random.random()
+            for third in employment_third:
+                if whale[third]==1:
+                    if rand01 < 0.3:
+                        for second in employment_second:
+                            whale[second] = 1
+                    else:
+                        whale[third] = 0
+                        for second in employment_second:
+                            whale[second] = 0
+
+            #企業規模
+                #パターン１：優先順位4で1があった場合，優先順位2,3も1を立てる
+                #パターン２：                        優先順位3,4に0を立てる
+                #パターン３：                        優先順位2,3,4に0を立てる
+            rand01 = random.random()
+            for fourth in scale_fourth:
+                if whale[fourth]==1:
+                    for second,third in zip(scale_second, scale_third):
+                        #パターン１
+                        if rand01 < 0.2:
+                            whale[second] = 1
+                            whale[third] = 1
+                        #パターン２
+                        elif rand01 < 0.6:
+                            whale[third] = 0
+                            whale[fourth] = 0
+                            #for four in family_fourth:
+                                #whale[four] = 0
+                        #パターン３
+                        else:
+                            whale[second] = 0
+                            whale[third] = 0
+                            whale[fourth] = 0
+                            #for four in family_fourth:
+                            #    whale[four] = 0
+                #パターン１：優先順位3で1があった場合，優先順位2も1を立てる
+                #パターン２：                        優先順位3,4に0
+            rand01 = random.random()
+            for third in scale_third:
+                if whale[third]==1:
+                    if rand01 < 0.3:
+                        for second in scale_second:
+                            whale[second] = 1
+                    else:
+                        whale[third] = 0
+                        for fourth in scale_fourth:
+                            whale[fourth] = 0
+        
+        """
+        for whale in self.new_whales:
+            #家族構成
+            #優先順位4で1があった場合，優先順位2,3も1を立てる
+            for fourth in family_fourth:
+                if whale[fourth]==1:
+                    for second,third in zip(family_second, family_third):
+                        whale[second] = 1
+                        whale[third] = 1
+            #優先順位3で1があった場合，優先順位2も1を立てる
+            for third in family_third:
+                if whale[third]==1:
+                    for second in family_second:
+                        whale[second] = 1
+            
+            #雇用形態
+            #優先順位3で1があった場合，優先順位2も1を立てる
+            for third in employment_third:
+                if whale[third]==1:
+                    for second in employment_second:
+                        whale[second] = 1
+                        
+            #企業規模
+            #優先順位4で1があった場合，優先順位2,3も1を立てる
+            for fourth in scale_fourth:
+                if whale[fourth]==1:
+                    for second,third in zip(scale_second, scale_third):
+                        whale[second] = 1
+                        whale[third] = 1
+            #優先順位3で1があった場合，優先順位2も1を立てる
+            for third in scale_third:
+                if whale[third]==1:
+                    for second in scale_second:
+                        whale[second] = 1
+        """
+
         self._a -= self.a_decrease
         if self._a < 0:
             self._a = 0
 
-        print(f'クジラリターン{self.new_whales}')
+        #print(f'クジラリターン{self.new_whales}')
         #pop（だと思う）を返す
         return self.new_whales
 

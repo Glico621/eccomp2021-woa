@@ -82,8 +82,8 @@ SEEDS = "[123,42,256]"
 # - P_MUTATION：各遺伝子座が突然変異する確率
 # - N_HOF: 記録用に保持する(上位n個の)最良個体数
 SEED = 42
-N_IND = 5
-N_GEN = 3
+N_IND = 20
+N_GEN = 5
 N_ATTR = 47
 N_PAY = 16
 S_TOUR = 3
@@ -128,12 +128,13 @@ priority_order_list  = (
 # - evaluation: 個体の評価を行う．
 # - decode_hof: 最良個体を支援制度（クエリ， 金額）にデコードする支援制度（クエリ， 金額）にデコードする
 # - create_valid_pop: 支給対象の制約条件を満たす初期個体を生成する
-def gene2pay(gene): 
+def gene2pay(gene):
     ### コーディングした遺伝子から，設計変数へと変換する関数
     # クエリ q は pandas.DataFrame.query の形式で書く形です．
     # シミュレーションプログラムでは制約条件を満たしているかの判定を渡されたクエリの文字列から
     # 行っていますので，スペースの入れ方をここでなされているように書いてください．
     #
+    
     # 引数：
     #   gene: 個体の遺伝子
     # 戻り値：
@@ -294,8 +295,8 @@ def ret_fitness(p):
     else:
         a_split = eval(a)
         # 実行
-        #print("a_split")
-        #print(a_split)
+        print("a_split")
+        print(a_split)
         if a_split[0] == None:
             print('実行不可能')
             return 1_000, a_split[1], a_split[2], a_split[3]
@@ -541,6 +542,7 @@ def main():
 
     values = []
     hof_fitness = []
+    new_fitness = []
 
     #スクリプトを途中終了したとき警告がでて嫌なので、残ってたら消しておく
     try:
@@ -659,10 +661,10 @@ def main():
     pop = toolbox.population_byhand()
     pop_archive.append((0, pop[:]))
     # 個体の評価
-    pop, values = evaluation(pop)
+    pop, new_fitness = evaluation(pop)
     #print([i.fitness.values for i in pop])
     #print([i for i in pop if 1000.0 <= i.fitness.values[0]])
-    print(f'これvalues{values}')
+    print(f'これvalues{new_fitness}')
     #print([values for i in pop])
     #print([i for i in pop if 1000.0 <= float(values[0])])
 
@@ -675,12 +677,11 @@ def main():
     logbook = tools.Logbook()
     logbook.header = "gen", "evals", "avg", "std", "min", "max"
     #record = stats.compile([ind.fitness.values[0] for ind in pop])
-    record = stats.compile([values[i] for i in range(len(pop))])
+    record = stats.compile([new_fitness[i] for i in range(len(pop))])
     logbook.record(gen=0, evals=len(pop), **record)
     hof = tools.HallOfFame(maxsize=N_HOF)
-    
+
     # 進化のサイクルを回す
-    #for g in []:
     for g in range(1, N_GEN + 1):
         print('第'+str(g) + '世代' + ' : ',end='')
         print(datetime.datetime.now()-start_time,end='')
@@ -693,8 +694,8 @@ def main():
 
         #whale = WOA()
         #whale.init(offspring)
-        new_offspring = whale.step(offspring)
-        print(f'クジラoffs:{new_offspring}')
+        new_offspring = whale.step(offspring, hof)
+        #print(f'クジラoffs:{new_offspring}')
         #offspring,p = gene2pay(offspring)
         #offspring = evaluation(offspring)
 
@@ -724,24 +725,30 @@ def main():
         # 子の世代で無効な適応度（delされたもの）をもつ個体を対象として評価を行う
         #invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
 
-        invalid_ind, values2 = evaluation(new_offspring)
+        invalid_ind, fit = evaluation(new_offspring)
         # invalid_ind = evaluation(offspring)
-        print([values2[i] for i in range(len(offspring))])
+        print([fit[i] for i in range(len(offspring))])
         # 子の世代を次の個体集合へ置き換える
         pop[:] = offspring
 
         #record = stats.compile([ind.fitness.values for ind in pop])
-        record = stats.compile([values2[i] for i in range(len(pop))])
+        record = stats.compile([fit[i] for i in range(len(pop))])
         logbook.record(gen=g, evals=len(invalid_ind), **record)
         
         #hof_before：hofが変更されたか否かの確認用
         #hof_before = hof
         hof.update(pop)
         
+        
         #hofが更新されたら，hof_fitnessにfの要素を追加する
-        #if hof != hof_before:
+        #まず連結してから，昇順に変換
+        new_fitness += fit
+        new_fitness.sort()
+        #hofの要素すだけ，取り出す
+        hof_fitness = new_fitness[:len(hof)]
+        
         #    hof_fitness.append(values2[-1])
-
+        print(f'hofの要素数{len(hof)}')
         print(f'hof:{hof}')
         print(f'hof[0]{hof[0]}')
         print(f'hofのfitness{hof_fitness}')
@@ -751,7 +758,7 @@ def main():
     del creator.FitnessMin
     del creator.Individual
 
-    return logbook, hof, values2
+    return logbook, hof, hof_fitness
 # -
 
 
