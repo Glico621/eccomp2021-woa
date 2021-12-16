@@ -52,6 +52,7 @@ class WOA():
         self.logarithmic_spiral = logarithmic_spiral
         self._a = 2
 
+        self.past_whales = []
 
     #初期化，処理する配列を持ってくる
     #def init(self, pop):
@@ -95,6 +96,7 @@ class WOA():
             for h in hof:
                 best = h[:-1]
                 self.bests.append(np.array(best))
+                self.past_whales.append(np.array(best))
 
         self.bests += self.whales
 
@@ -128,15 +130,12 @@ class WOA():
                 else:
                     #獲物を探す
                     #目標は，ランダムのクジラ
-                    
-                    
-                    if len(self.bests)==0:
+                    #new_pos = self.whales[random.randint(0, len(self.whales) -1)]
+                    if len(self.past_whales)==0:
                         new_pos = self.whales[random.randint(0, len(self.whales) -1)]
                     else:
-                        new_pos = self.bests[random.randint(0, len(self.bests) -1)]
-                    
-                    #new_pos = self.whales[random.randint(0, len(self.whales) -1)]
-                    
+                        #new_pos = self.bests[random.randint(0, len(self.bests) -1)]
+                        new_pos = self.past_whales[random.randint(0, len(self.past_whales) -1)]
 
                 new_pos = np.asarray(new_pos)
 
@@ -163,12 +162,11 @@ class WOA():
             #print("いかpos")
             #print(pos)
 
-            #!これくっそ問題 →たぶんok
             #計算し終えたposで，whaleを更新
             self.new_whales.append(pos.tolist())
 
 
-
+            self.past_whales.append(pos.tolist())
 
 
             #配列最後尾に給付金額を追加
@@ -331,6 +329,8 @@ class WOA():
                         whale[second] = 1
         """
 
+        #self.past_whales += self.new_whales
+        
         self._a -= self.a_decrease
         if self._a < 0:
             self._a = 0
